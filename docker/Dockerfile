@@ -1,11 +1,11 @@
+#FROM espressif/idf:release-v5.0
+FROM espressif/idf:v5.4.1
 
+ENV DEBIAN_FRONTEND=noninteractives
 
-FROM espressif/idf:release-v5.0
-
-ENV DEBIAN_FRONTEND noninteractive
-RUN echo "Set disable_coredump false" >> /etc/sudo.conf
 RUN apt update -q && \
-    apt install -yq sudo lsb-release gosu nano && \
+    apt -o Dpkg::Options::="--force-confold" install -yq sudo lsb-release gosu nano && \
+    echo "Set disable_coredump false" >> /etc/sudo.conf && \
     rm -rf /var/lib/apt/lists/*
 
 ARG TZ_ARG=UTC
@@ -19,7 +19,15 @@ RUN mkdir -p /tmp/install_micro_ros_deps_script && mv /install_micro_ros_deps_sc
     IDF_EXPORT_QUIET=1 /tmp/install_micro_ros_deps_script/install_micro_ros_deps_script.sh && \
     rm -rf /var/lib/apt/lists/*
 
-RUN /usr/bin/pip3 --no-cache-dir install catkin_pkg lark-parser colcon-common-extensions importlib-resources
+#RUN /usr/bin/pip3 --break-system-packages --no-cache-dir install catkin_pkg lark-parser colcon-common-extensions importlib-resources
+RUN python3.12 -m venv /opt/venv && \
+    /opt/venv/bin/pip install --upgrade pip setuptools && \
+    /opt/venv/bin/pip install --no-cache-dir \
+        catkin_pkg lark-parser colcon-common-extensions importlib-resources
+
+# 環境変数で PATH を通す（必要に応じて）
+ENV PATH="/opt/venv/bin:$PATH"
+
 ARG USER_ID=espidf
 
 RUN useradd --create-home --home-dir /home/$USER_ID --shell /bin/bash --user-group --groups adm,sudo $USER_ID && \
